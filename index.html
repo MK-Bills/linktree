@@ -283,6 +283,125 @@
     </style>
 </head>
 <body>
+
+<!-- ================== PRELOADER (PLACE THIS IMMEDIATELY AFTER <body>) ================== -->
+<link rel="preload" href="Untitledfile.json" as="fetch" type="application/json" crossorigin>
+
+<!-- include Lottie player (required) and GSAP (required for fade out) -->
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+
+<style>
+  /* Preloader visuals */
+  #preloader {
+    position: fixed;
+    inset: 0;
+    background:#fcfcfc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    transition: opacity .10s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Prevent accidental interaction while loading */
+  html.preloader-active, body.preloader-active {
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+  /* small responsive sizing */
+  #preloader lottie-player { width: 160px; height: 160px; max-width: 40vw; max-height: 40vw; }
+</style>
+
+<div id="preloader" aria-hidden="true" role="status">
+  
+  <lottie-player
+    id="lottie-loader"
+    src="Untitledfile.json"
+    background="transparent"
+    speed="1"
+    loop
+    autoplay>
+  </lottie-player>
+
+  <!-- Fallback (if browser doesn't support lottie-player for any reason) -->
+  <noscript>
+    <div style="color:#fff;font-weight:600">Loading…</div>
+  </noscript>
+</div>
+
+<script>
+  (function () {
+    // Add a class to prevent scrolling while preloader is active
+    document.documentElement.classList.add('preloader-active');
+    document.body.classList.add('preloader-active');
+
+    // Utility: wait until the lottie-player element is defined, and GSAP is available
+    function readyCheck(callback) {
+      const maxWait = 8000; // ms
+      const start = Date.now();
+      (function poll() {
+        const isLottieReady = !!window.customElements && !!customElements.get('lottie-player');
+        const isGsapReady = typeof window.gsap !== 'undefined';
+        if (isLottieReady && isGsapReady) return callback();
+        if (Date.now() - start > maxWait) return callback(); // fallback after timeout
+        setTimeout(poll, 80);
+      })();
+    }
+
+    readyCheck(function () {
+      // Wait for full page load (images/fonts etc). If load already happened, run immediately.
+      function onLoaded() {
+        const pre = document.getElementById('preloader');
+        if (!pre) return finish();
+
+        // Get the lottie player instance
+        const lottiePlayer = document.getElementById('lottie-loader');
+        
+        // Calculate remaining time to complete 4 seconds total
+        const loadTime = Date.now() - performance.timing.navigationStart;
+        const remainingTime = Math.max(0, 4000 - loadTime); // 4000ms = 4 seconds
+        
+        // Wait for the remaining time to complete 4 seconds total
+        setTimeout(function() {
+          // Fade out + remove
+          if (typeof gsap !== 'undefined') {
+            gsap.to(pre, {
+              opacity: 0,
+              duration: 0.8,
+              ease: 'power2.out',
+              onComplete: finish
+            });
+          } else {
+            // fallback: simple CSS fade
+            pre.style.transition = 'opacity 0.8s ease';
+            pre.style.opacity = 0;
+            setTimeout(finish, 800);
+          }
+        }, remainingTime);
+
+        function finish() {
+          // remove element and restore scrolling
+          if (pre && pre.parentNode) pre.parentNode.removeChild(pre);
+          document.documentElement.classList.remove('preloader-active');
+          document.body.classList.remove('preloader-active');
+
+          // dispatch event to allow other JS to start (e.g., hero animations)
+          window.dispatchEvent(new CustomEvent('preloader:done'));
+        }
+      }
+
+      if (document.readyState === 'complete') {
+        onLoaded();
+      } else {
+        window.addEventListener('load', onLoaded, { once: true });
+      }
+    });
+  })();
+</script>
+<!-- ================== END PRELOADER ================== -->
+
+
     <div class="floating-shapes" id="shapes-container"></div>
     
     <div class="container">
